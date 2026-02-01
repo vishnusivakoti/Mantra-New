@@ -36,7 +36,6 @@ INDEX VERSION 1.134+C:\Users\vsivakot\Desktop\MantraIAS\Mantra-New\.metadata\.pl
 3946863767.index
 2296581088.index
 1045477061.index
-731958834.index
 2622709769.index
 813114491.index
 4111785220.index

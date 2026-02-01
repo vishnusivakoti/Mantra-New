@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8085';
+const API_BASE_URL = 'https://mantra-ias-bdb6c1377730.herokuapp.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
