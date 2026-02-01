@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import logoImage from '../assets/Logo.png';
 import './StudentNavbar.css';
 
 interface NavItem {
@@ -57,8 +58,11 @@ export default function StudentNavbar({ onLogout }: StudentNavbarProps) {
     <>
       <nav className="student-navbar">
         <div className="student-navbar-brand">
-          <h2>MANTRA IAS</h2>
-          <span className="student-portal">Student Portal</span>
+          <img src={logoImage} alt="Mantra IAS" className="student-navbar-logo" />
+          <div className="student-navbar-text">
+            <span className="student-navbar-title">MANTRA IAS</span>
+            <span className="student-portal">Student Portal</span>
+          </div>
         </div>
 
         {/* Desktop Navigation */}

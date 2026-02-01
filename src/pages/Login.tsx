@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useNotification, type NotificationType } from '../hooks/useNotification';
 import Notification from '../components/Notification';
 import { authAPI, type LoginRequest } from '../services/api';
+import logoImage from '../assets/Logo.png';
 import './Login.css';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState<'email' | 'otp' | 'password'>('email');
   const [forgotEmail, setForgotEmail] = useState('');
@@ -17,6 +20,19 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
   const { notification, showNotification, hideNotification } = useNotification();
+
+  const handleSignupClick = () => {
+    setIsFlipped(true);
+    setTimeout(() => {
+      setIsFlipped(false);
+      navigate('/signup');
+    }, 400);
+  };
+
+  const handleForgotPasswordClick = () => {
+    setIsFlipped(true);
+    setTimeout(() => setShowForgotPassword(true), 300);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,10 +119,11 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
+        <div className={`login-card-inner ${isFlipped ? 'flipped' : ''}`}>
         {!showForgotPassword ? (
           <>
             <div className="login-header">
-              <h1>MANTRA IAS</h1>
+              <img src={logoImage} alt="Mantra IAS" className="login-logo" />
               <p>Welcome back! Please sign in to continue.</p>
             </div>
 
@@ -125,14 +142,23 @@ export default function Login() {
 
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                  className="input"
-                />
+                <div className="password-input-container">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    className="input password-input"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
 
               <button 
@@ -145,16 +171,18 @@ export default function Login() {
             </form>
 
             <div className="login-footer">
-              <p>
+              <div className="footer-buttons">
                 <button 
                   type="button" 
                   className="forgot-password-link" 
-                  onClick={() => setShowForgotPassword(true)}
+                  onClick={handleForgotPasswordClick}
                 >
                   Forgot Password?
                 </button>
-              </p>
-              <p>Don't have an account? <Link to="/signup">Sign Up</Link></p>
+                <Link to="/signup" className="signup-link" onClick={handleSignupClick}>
+                  Sign Up
+                </Link>
+              </div>
             </div>
           </>
         ) : (
@@ -234,12 +262,16 @@ export default function Login() {
                 type="button" 
                 className="back-to-login" 
                 onClick={() => {
-                  setShowForgotPassword(false);
-                  setForgotStep('email');
-                  setForgotEmail('');
-                  setOtp('');
-                  setNewPassword('');
-                  setConfirmPassword('');
+                  setIsFlipped(true);
+                  setTimeout(() => {
+                    setShowForgotPassword(false);
+                    setForgotStep('email');
+                    setForgotEmail('');
+                    setOtp('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setIsFlipped(false);
+                  }, 300);
                 }}
               >
                 Back to Login
@@ -247,6 +279,7 @@ export default function Login() {
             </div>
           </>
         )}
+        </div>
       </div>
 
       {notification && (

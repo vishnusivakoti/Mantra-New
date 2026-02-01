@@ -84,22 +84,25 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-stats">
-        <div className="stats-card">
-          <h3>Quick Actions</h3>
-          <div className="quick-actions">
-            <button className="btn btn-primary" onClick={() => navigate('/meetings')}>
-              🏢 Schedule Meeting
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate('/tests')}>
-              📋 Create Test
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate('/users')}>
-              👤 Add User
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate('/dpp')}>
-              📖 Add Problem
-            </button>
-          </div>
+        <h3>Quick Actions</h3>
+      </div>
+
+      <div className="quick-actions-grid">
+        <div className="quick-action-card" onClick={() => navigate('/meetings')}>
+          <div className="quick-action-icon">🏢</div>
+          <span>Schedule Meeting</span>
+        </div>
+        <div className="quick-action-card" onClick={() => navigate('/tests')}>
+          <div className="quick-action-icon">📋</div>
+          <span>Create Test</span>
+        </div>
+        <div className="quick-action-card" onClick={() => navigate('/users')}>
+          <div className="quick-action-icon">👤</div>
+          <span>Add User</span>
+        </div>
+        <div className="quick-action-card" onClick={() => navigate('/dpp')}>
+          <div className="quick-action-icon">📖</div>
+          <span>Add Problem</span>
         </div>
       </div>
     </div>

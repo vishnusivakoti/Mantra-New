@@ -4,6 +4,7 @@ import { usersAPI, authAPI } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../contexts/ThemeContext';
 import Notification from '../components/Notification';
+import logoImage from '../assets/Logo.png';
 import './Signup.css';
 
 interface SignupForm {
@@ -26,9 +27,14 @@ export default function Signup() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
   const { notification, showNotification, hideNotification } = useNotification();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
 
   const handleInputChange = (field: keyof SignupForm, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -116,19 +122,16 @@ export default function Signup() {
 
   return (
     <div className="signup-container">
-      <div className="signup-header">
-        <div className="brand-section">
-          <h1>MANTRA IAS</h1>
-          <p>Join thousands of aspirants in their IAS journey</p>
-        </div>
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-      </div>
-
       <div className="signup-content">
         <div className="signup-card">
-          {step === 'form' ? (
+          <div className="signup-card-inner">
+            <div className="signup-header">
+              <img src={logoImage} alt="Mantra IAS" className="signup-logo" />
+              <button className="theme-toggle" onClick={toggleTheme}>
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+            </div>
+            {step === 'form' ? (
             <>
               <div className="signup-form-header">
                 <h2>Create Account</h2>
@@ -248,8 +251,9 @@ export default function Signup() {
             </>
           )}
 
-          <div className="signup-footer">
-            <p>Already have an account? <Link to="/login">Sign In</Link></p>
+            <div className="signup-footer">
+              <p>Already have an account? <Link to="/login" onClick={handleLoginClick}>Sign In</Link></p>
+            </div>
           </div>
         </div>
       </div>

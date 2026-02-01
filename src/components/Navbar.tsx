@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import logoImage from '../assets/Logo.png';
 import './Navbar.css';
 
 const ADMIN_NAV_ITEMS = [
@@ -44,7 +45,8 @@ export default function Navbar({ onLogout }: NavbarProps) {
     <>
       <nav className="navbar">
         <div className="navbar-brand">
-          <h2>MANTRA IAS</h2>
+          <img src={logoImage} alt="Mantra IAS" className="navbar-logo" />
+          <span className="navbar-title">MANTRA IAS</span>
         </div>
 
         <div className="navbar-menu">
