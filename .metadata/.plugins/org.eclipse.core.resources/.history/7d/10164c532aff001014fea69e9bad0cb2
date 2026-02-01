@@ -1,0 +1,101 @@
+package com.Project.Security.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import com.Project.Security.filter.JwtAuthFilter;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthFilter authFilter;
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new UserInfoUserDetailsService();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http.csrf(customizer -> customizer.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+                .authorizeHttpRequests(request -> request
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
+                        .requestMatchers("/api/auth/OTP/forgot-password/otp","/api/auth/OTP/forgot-password/validate","/api/auth/OTP/forgot-password/reset","/api/auth/OTP/register/otp").permitAll()
+                        .requestMatchers("/mantraIAS/api/auth/admin/allusers","/mantraIAS/api/auth/admin/user/email/{email}","/api/scores/all").hasRole("ADMIN")
+                        .requestMatchers("/mantraIAS/api/auth/register/user", "/mantraIAS/api/auth/login", "/mantraIAS/api/auth/register/admin",
+                        		         "/mantraIAS/api/auth/extractRole","/mantraIAS/api/auth/user/{userid}","/api/scores/user/{userId}").permitAll()
+                        .requestMatchers("/api/user/free/mocktests/**").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers("/api/admin/mocktests/{mockTestId}/questions").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/mocktests/{mockTestId}/attempt").hasAnyRole("MOCKTEST", "FULL_COURSE", "ADMIN")
+                        .requestMatchers("/api/admin/mocktests/{mockTestId}/calculate-score").hasAnyRole("MOCKTEST", "FULL_COURSE")
+                        .requestMatchers("/api/admin/mocktests/{mockTestId}/results").hasAnyRole("MOCKTEST", "FULL_COURSE")
+                        .requestMatchers("/api/admin/Free/mocktests/{mockTestId}/questions").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/Free/mocktests/{mockTestId}/attempt").hasAnyRole("ADMIN","USER")
+                        .requestMatchers("/api/admin/Free/mocktests/{mockTestId}/calculate-score").hasRole("USER")
+                        .requestMatchers("/api/admin/Free/mocktests/{mockTestId}/results").hasRole("USER")
+                        .requestMatchers("/api/admin/Free/mocktests/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/user/mocktests/**").hasAnyRole("MOCKTEST", "FULL_COURSE", "ADMIN")
+                        .requestMatchers("/api/dpp**").hasAnyRole("FULL_COURSE", "ADMIN")
+                        .anyRequest().authenticated())
+                .httpBasic(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowCredentials(true);
+        configuration.addAllowedOrigin("http://localhost:5173"); // Your Vite dev server
+        configuration.addAllowedOrigin("http://localhost:3000");  // Additional frontend URLs
+        configuration.addAllowedHeader("*");
+        configuration.addAllowedMethod("*");
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService());
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        return authenticationProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}

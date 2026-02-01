@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import './Navbar.css';
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', path: '/admin', icon: '🏠' },
-  { key: 'meetings', label: 'Meetings', path: '/meetings', icon: '📅' },
-  { key: 'tests', label: 'Mock Tests', path: '/tests', icon: '📝' },
-  { key: 'users', label: 'Users', path: '/users', icon: '👥' },
-  { key: 'dpp', label: 'Daily Practice', path: '/dpp', icon: '📚' },
+  { key: 'meetings', label: 'Meetings', path: '/admin/meetings', icon: '📅' },
+  { key: 'tests', label: 'Mock Tests', path: '/admin/tests', icon: '📝' },
+  { key: 'users', label: 'Users', path: '/admin/users', icon: '👥' },
+  { key: 'dpp', label: 'Daily Practice', path: '/admin/dpp', icon: '📚' },
+];
+
+const USER_NAV_ITEMS = [
+  { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: '🏠' },
 ];
 
 interface NavbarProps {
@@ -17,11 +21,24 @@ interface NavbarProps {
 
 export default function Navbar({ onLogout }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
   const currentPath = location.pathname;
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setUserRole(userData.role);
+    }
+  }, []);
+
+  const getNavItems = () => {
+    return userRole === 'ADMIN' ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
+  };
 
   return (
     <>
@@ -31,7 +48,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
         </div>
 
         <div className="navbar-menu">
-          {NAV_ITEMS.map(item => (
+          {getNavItems().map(item => (
             <button
               key={item.key}
               className={`navbar-item ${currentPath === item.path ? 'active' : ''}`}
@@ -64,7 +81,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
         <div className="navbar-mobile">
           <div className="navbar-mobile-overlay" onClick={() => setIsOpen(false)} />
           <div className="navbar-mobile-menu">
-            {NAV_ITEMS.map(item => (
+            {getNavItems().map(item => (
               <button
                 key={item.key}
                 className={`navbar-mobile-item ${currentPath === item.path ? 'active' : ''}`}

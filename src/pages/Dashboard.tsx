@@ -1,15 +1,58 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { meetingsAPI, mockTestsAPI, usersAPI, dppAPI } from '../services/api';
 import './Dashboard.css';
 
-const DASHBOARD_ITEMS = [
-  { key: 'meetings', title: 'Meetings', icon: '📅', count: 12, color: '#3b82f6' },
-  { key: 'tests', title: 'Mock Tests', icon: '📝', count: 45, color: '#10b981' },
-  { key: 'users', title: 'Users', icon: '👥', count: 234, color: '#f59e0b' },
-  { key: 'dpp', title: 'Daily Practice', icon: '📚', count: 89, color: '#ef4444' },
-];
+interface DashboardStats {
+  meetings: number;
+  mockTests: number;
+  users: number;
+  dailyProblems: number;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({
+    meetings: 0,
+    mockTests: 0,
+    users: 0,
+    dailyProblems: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const [meetingsRes, paidTestsRes, freeTestsRes, usersRes, dppRes] = await Promise.all([
+        meetingsAPI.getAll().catch(() => ({ data: [] })),
+        mockTestsAPI.getAllPaid().catch(() => ({ data: [] })),
+        mockTestsAPI.getAllFree().catch(() => ({ data: [] })),
+        usersAPI.getAll().catch(() => ({ data: [] })),
+        dppAPI.getAll().catch(() => [])
+      ]);
+
+      setStats({
+        meetings: meetingsRes.data.length,
+        mockTests: paidTestsRes.data.length + freeTestsRes.data.length,
+        users: usersRes.data.length,
+        dailyProblems: dppRes.length
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const DASHBOARD_ITEMS = [
+    { key: 'meetings', title: 'Meetings', icon: '🏢', count: stats.meetings, color: '#3b82f6' },
+    { key: 'tests', title: 'Mock Tests', icon: '📋', count: stats.mockTests, color: '#10b981' },
+    { key: 'users', title: 'Users', icon: '👤', count: stats.users, color: '#f59e0b' },
+    { key: 'dpp', title: 'Daily Practice', icon: '📖', count: stats.dailyProblems, color: '#ef4444' },
+  ];
 
   return (
     <div className="dashboard">
@@ -31,7 +74,9 @@ export default function Dashboard() {
             </div>
             <div className="dashboard-card-content">
               <h3>{item.title}</h3>
-              <p className="dashboard-card-count">{item.count}</p>
+              <p className="dashboard-card-count">
+                {loading ? '...' : item.count}
+              </p>
             </div>
             <div className="dashboard-card-arrow">→</div>
           </div>
@@ -40,37 +85,19 @@ export default function Dashboard() {
 
       <div className="dashboard-stats">
         <div className="stats-card">
-          <h3>Recent Activity</h3>
-          <div className="activity-list">
-            <div className="activity-item">
-              <span className="activity-icon">👤</span>
-              <span>New user registered</span>
-              <span className="activity-time">2 min ago</span>
-            </div>
-            <div className="activity-item">
-              <span className="activity-icon">📝</span>
-              <span>Mock test completed</span>
-              <span className="activity-time">5 min ago</span>
-            </div>
-            <div className="activity-item">
-              <span className="activity-icon">📅</span>
-              <span>Meeting scheduled</span>
-              <span className="activity-time">10 min ago</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stats-card">
           <h3>Quick Actions</h3>
           <div className="quick-actions">
             <button className="btn btn-primary" onClick={() => navigate('/meetings')}>
-              📅 Schedule Meeting
+              🏢 Schedule Meeting
             </button>
             <button className="btn btn-primary" onClick={() => navigate('/tests')}>
-              📝 Create Test
+              📋 Create Test
             </button>
             <button className="btn btn-primary" onClick={() => navigate('/users')}>
-              👥 Add User
+              👤 Add User
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/dpp')}>
+              📖 Add Problem
             </button>
           </div>
         </div>

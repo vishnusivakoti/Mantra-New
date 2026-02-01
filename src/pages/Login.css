@@ -80,6 +80,51 @@
   border-radius: 8px;
 }
 
+.forgot-password-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.forgot-password-link:hover {
+  color: var(--primary-dark);
+}
+
+.forgot-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.3rem;
+}
+
+.back-to-login {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.back-to-login:hover {
+  background: var(--background);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 @media (max-width: 480px) {
   .login-card {
     padding: 32px 24px;

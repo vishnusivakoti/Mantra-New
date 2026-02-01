@@ -1,0 +1,201 @@
+package com.Project.Security.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import com.Project.Security.Exception.MockTestNotFoundException;
+import com.Project.Security.Exception.QuestionNotFoundException;
+import com.Project.Security.Exception.DuplicateNameException;
+import com.Project.Security.dto.ApiResponse;
+import com.Project.Security.dto.CreateMockTestRequest;
+import com.Project.Security.dto.CreateQuestionRequest;
+import com.Project.Security.dto.MockTestDTO;
+import com.Project.Security.dto.QuestionDTO;
+import com.Project.Security.service.MockTestService;
+import com.Project.Security.service.QuestionService;
+
+import jakarta.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/mocktests")
+public class AdminMockTestController {
+
+    private final MockTestService mockTestService;
+    private final QuestionService questionService;
+
+    // Constructor-based dependency injection
+    public AdminMockTestController(MockTestService mockTestService, QuestionService questionService) {
+        this.mockTestService = mockTestService;
+        this.questionService = questionService;
+    }
+
+    // Mock Test CRUD Operations
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MockTestDTO>> createMockTest(
+            @Valid @RequestBody CreateMockTestRequest request) {
+        // Check for duplicate name
+        List<MockTestDTO> existingTests = mockTestService.getAllMockTests();
+        boolean nameExists = existingTests.stream()
+            .anyMatch(test -> test.getName().equalsIgnoreCase(request.getName().trim()));
+        
+        if (nameExists) {
+            throw new DuplicateNameException("A mock test with the name '" + request.getName() + "' already exists. Please choose a different name.");
+        }
+        
+        MockTestDTO mockTest = mockTestService.createMockTest(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Mock test created successfully", mockTest));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<MockTestDTO>>> getAllMockTests() {
+        List<MockTestDTO> mockTests = mockTestService.getAllMockTests();
+        return ResponseEntity.ok(ApiResponse.success("Mock tests retrieved successfully", mockTests));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MockTestDTO>> getMockTestById(@PathVariable Long id) {
+        MockTestDTO mockTest = mockTestService.getMockTestById(id);
+        if (mockTest == null) {
+            throw new MockTestNotFoundException("Mock test with ID " + id + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Mock test retrieved successfully", mockTest));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<MockTestDTO>> updateMockTest(
+            @PathVariable Long id, @Valid @RequestBody CreateMockTestRequest request) {
+        // Check for duplicate name (excluding current test)
+        List<MockTestDTO> existingTests = mockTestService.getAllMockTests();
+        boolean nameExists = existingTests.stream()
+            .anyMatch(test -> !test.getId().equals(id) && test.getName().equalsIgnoreCase(request.getName().trim()));
+        
+        if (nameExists) {
+            throw new DuplicateNameException("A mock test with the name '" + request.getName() + "' already exists. Please choose a different name.");
+        }
+        
+        MockTestDTO mockTest = mockTestService.updateMockTest(id, request);
+        if (mockTest == null) {
+            throw new MockTestNotFoundException("Cannot update. Mock test with ID " + id + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Mock test updated successfully", mockTest));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteMockTest(@PathVariable Long id) {
+        boolean deleted = mockTestService.deleteMockTest(id);
+        if (!deleted) {
+            throw new MockTestNotFoundException("Cannot delete. Mock test with ID " + id + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Mock test deleted successfully", null));
+    }
+
+    // Question CRUD Operations
+    @PostMapping("/{mockTestId}/questions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QuestionDTO>> addQuestion(
+            @PathVariable Long mockTestId, @Valid @RequestBody CreateQuestionRequest request) {
+        QuestionDTO question = questionService.addQuestion(mockTestId, request);
+        if (question == null) {
+            throw new QuestionNotFoundException("Mock test with ID " + mockTestId + " does not exist for adding question.");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Question added successfully", question));
+    }
+
+    @GetMapping("/{mockTestId}/questions")
+    @PreAuthorize("hasAnyRole('MOCKTEST', 'FULL_COURSE', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<QuestionDTO>>> getQuestionsByMockTest(
+            @PathVariable Long mockTestId) {
+        List<QuestionDTO> questions = questionService.getQuestionsByMockTestId(mockTestId);
+        if (questions == null || questions.isEmpty()) {
+            throw new QuestionNotFoundException("No questions found for mock test ID " + mockTestId + ".");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Questions retrieved successfully", questions));
+    }
+
+    @GetMapping("/questions/{questionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QuestionDTO>> getQuestionById(@PathVariable Long questionId) {
+        QuestionDTO question = questionService.getQuestionById(questionId);
+        if (question == null) {
+            throw new QuestionNotFoundException("Question with ID " + questionId + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Question retrieved successfully", question));
+    }
+
+    @PutMapping("/questions/{questionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QuestionDTO>> updateQuestion(
+            @PathVariable Long questionId, @Valid @RequestBody CreateQuestionRequest request) {
+        QuestionDTO question = questionService.updateQuestion(questionId, request);
+        if (question == null) {
+            throw new QuestionNotFoundException("Cannot update. Question with ID " + questionId + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Question updated successfully", question));
+    }
+
+    @DeleteMapping("/questions/{questionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteQuestion(@PathVariable Long questionId) {
+        boolean deleted = questionService.deleteQuestion(questionId);
+        if (!deleted) {
+            throw new QuestionNotFoundException("Cannot delete. Question with ID " + questionId + " does not exist.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Question deleted successfully", null));
+    }
+
+    // Attempt Test Endpoint
+    @PostMapping("/{mockTestId}/attempt")
+    @PreAuthorize("hasAnyRole('MOCKTEST', 'FULL_COURSE')")
+    public ResponseEntity<ApiResponse<com.Project.Security.dto.AttemptTestDTO>> startAttemptTest(
+            @PathVariable Long mockTestId,
+            @RequestParam Long userId) {
+        
+        // Get mock test details
+        MockTestDTO mockTest = mockTestService.getMockTestById(mockTestId);
+        if (mockTest == null) {
+            throw new MockTestNotFoundException("Mock test with ID " + mockTestId + " does not exist.");
+        }
+        
+        // Get questions for the test
+        List<QuestionDTO> questions = questionService.getQuestionsByMockTestId(mockTestId);
+        if (questions == null || questions.isEmpty()) {
+            throw new QuestionNotFoundException("No questions found for mock test ID " + mockTestId + ".");
+        }
+        
+        // Create attempt test DTO
+        com.Project.Security.dto.AttemptTestDTO attemptTest = new com.Project.Security.dto.AttemptTestDTO();
+        attemptTest.setUserId(userId);
+        attemptTest.setMockTestId(mockTestId);
+        attemptTest.setMockTestName(mockTest.getName());
+        attemptTest.setTimerInMinutes(mockTest.getTimerInMinutes());
+        attemptTest.setStartedAt(java.time.LocalDateTime.now());
+        attemptTest.setIsCompleted(false);
+        
+        // Convert questions to attempt questions (without correct answers)
+        List<com.Project.Security.dto.AttemptTestDTO.AttemptQuestionDTO> attemptQuestions = questions.stream()
+            .map(q -> new com.Project.Security.dto.AttemptTestDTO.AttemptQuestionDTO(
+                q.getId(),
+                q.getQuestionNo(),
+                q.getQuestion(),
+                q.getOptionA(),
+                q.getOptionB(),
+                q.getOptionC(),
+                q.getOptionD(),
+                null // selectedOption starts as null
+            ))
+            .collect(java.util.stream.Collectors.toList());
+        
+        attemptTest.setQuestions(attemptQuestions);
+        
+        return ResponseEntity.ok(ApiResponse.success("Test attempt started successfully", attemptTest));
+    }

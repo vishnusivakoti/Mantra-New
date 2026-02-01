@@ -1,0 +1,195 @@
+package com.Project.Security.controller;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import jakarta.validation.Valid;
+
+import com.Project.Security.Exception.EmailNotFoundException;
+import com.Project.Security.Exception.InvalidCredentialsException;
+import com.Project.Security.Exception.UserNotFoundException;
+import com.Project.Security.dto.ApiResponse;
+import com.Project.Security.dto.AuthRequest;
+import com.Project.Security.dto.AuthResponse;
+import com.Project.Security.entity.UserInfo;
+import com.Project.Security.service.JwtService;
+import com.Project.Security.service.Servicee;
+
+@RestController
+@RequestMapping("mantraIAS/api/auth")
+public class Controller {
+
+    private final Servicee service;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+
+    // Constructor-based dependency injection
+    public Controller(Servicee service, JwtService jwtService, AuthenticationManager authenticationManager) {
+        this.service = service;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+    }
+
+    // Register new user
+    @PostMapping("/register/user")
+    public String addNewUser(@Valid @RequestBody UserInfo userinfo) {
+        // Ensure user roles are valid (MOCKTEST or FULL_COURSE)
+        if (userinfo.getRoles() == null ||
+            (!userinfo.getRoles().equals("MOCKTEST") && !userinfo.getRoles().equals("FULL_COURSE"))) {
+            userinfo.setRoles("USER"); // Default role for regular users
+        }
+        return service.addUser(userinfo);
+    }
+
+    // Register new admin
+    @PostMapping("/register/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String addNewAdmin(@RequestBody UserInfo userinfo) {
+        userinfo.setRoles("ADMIN");
+        return service.addUser(userinfo);
+    }
+
+    // Login endpoint
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> authenticateAndGetToken(@Valid @RequestBody AuthRequest authRequest) {
+        try {
+            // Check if user exists first
+            UserInfo user = service.getUserByUsername(authRequest.getEmailid());
+            if (user == null) {
+                throw new EmailNotFoundException("No account found with email: " + authRequest.getEmailid());
+            }
+
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getEmailid(), authRequest.getPassword())
+            );
+
+            if (authentication.isAuthenticated()) {
+                String token = jwtService.generateToken(authRequest.getEmailid(), user.getRoles());
+                Date issuedAt;
+                Date expiresAt;
+
+                try {
+                    SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtService.SECRET));
+                    Claims claims = Jwts.parser()
+                            .verifyWith(key)
+                            .build()
+                            .parseSignedClaims(token)
+                            .getPayload();
+
+                    issuedAt = claims.getIssuedAt();
+                    expiresAt = claims.getExpiration();
+                } catch (Exception e) {
+                    issuedAt = new Date();
+                    expiresAt = new Date(System.currentTimeMillis() + 1000 * 60 * 30);
+                }
+
+                AuthResponse.UserData userData = new AuthResponse.UserData(
+                    user.getUserid(),
+                    user.getName(),
+                    user.getEmailid(),
+                    user.getRoles(),
+                    user.getAcess(),
+                    issuedAt,
+                    expiresAt,
+                    user.getPhoneno(),
+                    token
+                );
+
+                AuthResponse response = new AuthResponse(200, "Login successful", "Success", userData);
+                return ResponseEntity.ok(response);
+            } else {
+                throw new InvalidCredentialsException("Authentication failed");
+            }
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            throw new InvalidCredentialsException("Invalid password");
+        }
+    }
+
+    // Extract role from JWT token
+    @GetMapping("/extractRole")
+    public ResponseEntity<String> extractUserRoleFromToken(@RequestHeader("Authorization") String tokenHeader) {
+        if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Invalid token header format. Expected 'Bearer <token>'");
+        }
+        String token = tokenHeader.substring(7);
+        String role = jwtService.extractRole(token);
+
+        if (role == null || role.isEmpty()) {
+            return ResponseEntity.badRequest().body("No role found in token");
+        }
+        return ResponseEntity.ok(role);
+    }
+
+    // Update user details
+    @PutMapping("/user/{userid}")
+    public ResponseEntity<ApiResponse<UserInfo>> updateUser(
+            @PathVariable int userid,
+            @Valid @RequestBody UserInfo updatedUser) {
+        UserInfo existing = service.getUserById(userid);
+        if (existing == null) {
+            throw new UserNotFoundException("User not found with id: " + userid);
+        }
+
+        // Update fields
+        existing.setName(updatedUser.getName());
+        existing.setEmailid(updatedUser.getEmailid());
+        // Only update password if provided and not empty
+        existing.setPhoneno(updatedUser.getPhoneno());
+        existing.setGender(updatedUser.getGender());
+        existing.setDob(updatedUser.getDob());
+        existing.setHighestQualification(updatedUser.getHighestQualification());
+        existing.setUniversity(updatedUser.getUniversity());
+        existing.setYearOfPassing(updatedUser.getYearOfPassing());
+        existing.setAttemptsGiven(updatedUser.getAttemptsGiven());
+        existing.setState(updatedUser.getState());
+        existing.setCity(updatedUser.getCity());
+        existing.setPinCode(updatedUser.getPinCode());
+        existing.setAddress(updatedUser.getAddress());
+        existing.setDateOfJoining(updatedUser.getDateOfJoining());
+        existing.setAadharNumber(updatedUser.getAadharNumber());
+        existing.setAcess(updatedUser.getAcess());
+        existing.setRoles(updatedUser.getRoles());
+        existing.setStatus(updatedUser.getStatus());
+
+        UserInfo savedUser = service.updateUser(existing);
+
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", savedUser));
+    }
+
+    // Get user details by user ID
+    @GetMapping("/user/{userid}")
+    public ResponseEntity<?> getUserById(@PathVariable int userid){
+        UserInfo user = service.getUserById(userid);
+        if(user == null) {
+            throw new UserNotFoundException("User not found with id: " + userid);
+        }
+        return ResponseEntity.ok(user);
+    }
+
+    // Get all users (admin only)
+    @GetMapping("/admin/allusers")
+    public ResponseEntity<ApiResponse<List<UserInfo>>> getAllUsers() {
+        List<UserInfo> users = service.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", users));
+    }
+
+    // Get user by email (admin only)
+    @GetMapping("/admin/user/email/{email}")
+    public ResponseEntity<ApiResponse<UserInfo>> getUserByEmail(@PathVariable String email) {
+        UserInfo user = service.getUserByUsername(email);
+        return ResponseEntity.ok(ApiResponse.success("User retrieved successfully", user));
+    }
+}
