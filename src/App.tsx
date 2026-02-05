@@ -17,6 +17,7 @@ import FreeTests from './pages/FreeTests';
 import StudentPractice from './pages/StudentPractice';
 import Scores from './pages/Scores';
 import Profile from './pages/Profile';
+import MyAttempts from './pages/MyAttempts';
 import './styles/globals.css';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
@@ -164,6 +165,13 @@ export default function App() {
             <ProtectedRoute adminOnly={true}>
               <AppLayout>
                 <DailyProblems />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/my-attempts" element={
+            <ProtectedRoute>
+              <AppLayout isStudent={true}>
+                <MyAttempts />
               </AppLayout>
             </ProtectedRoute>
           } />

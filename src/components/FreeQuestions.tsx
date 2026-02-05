@@ -25,7 +25,8 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
     optionB: '',
     optionC: '',
     optionD: '',
-    correctOption: 'A'
+    correctOption: 'A',
+    solutionLink: ''
   });
 
   useEffect(() => {
@@ -51,11 +52,16 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
     e.preventDefault();
     
     try {
+      const submitData = {
+        ...formData,
+        solutionLink: formData.solutionLink?.trim() || undefined
+      };
+      
       if (editingQuestion) {
-        await freeQuestionsAPI.update(editingQuestion.id, formData);
+        await freeQuestionsAPI.update(editingQuestion.id, submitData);
         showNotification('Question updated successfully', 'success');
       } else {
-        await freeQuestionsAPI.create(mockTest.id, formData);
+        await freeQuestionsAPI.create(mockTest.id, submitData);
         showNotification('Question added successfully', 'success');
       }
       
@@ -75,7 +81,8 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
       optionB: question.optionB,
       optionC: question.optionC,
       optionD: question.optionD,
-      correctOption: question.correctOption
+      correctOption: question.correctOption,
+      solutionLink: question.solutionLink || ''
     });
     setShowForm(true);
   };
@@ -116,7 +123,8 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
       optionB: '',
       optionC: '',
       optionD: '',
-      correctOption: 'A'
+      correctOption: 'A',
+      solutionLink: ''
     });
     setEditingQuestion(null);
     setShowForm(false);
@@ -215,6 +223,16 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
                 </select>
               </div>
               
+              <div className="form-group">
+                <label>🎥 Solution Link (YouTube)</label>
+                <input
+                  type="url"
+                  value={formData.solutionLink || ''}
+                  onChange={(e) => setFormData({...formData, solutionLink: e.target.value})}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+              
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={resetForm}>
                   Cancel
@@ -271,6 +289,16 @@ export default function FreeQuestions({ mockTest, onClose }: FreeQuestionsProps)
                     </div>
                     <div className="correct-answer-indicator">
                       <strong>✅ Correct Answer: {question.correctOption}</strong>
+                      {question.solutionLink && (
+                        <a 
+                          href={question.solutionLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="solution-link"
+                        >
+                          🎥 Solution
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

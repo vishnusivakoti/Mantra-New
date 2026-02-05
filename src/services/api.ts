@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://mantra-ias-bdb6c1377730.herokuapp.com';
+const API_BASE_URL = 'http://localhost:8085';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -190,6 +190,7 @@ export interface QuestionRequest {
   optionC: string;
   optionD: string;
   correctOption: string;
+  solutionLink?: string;
 }
 
 export interface QuestionDTO {
@@ -201,18 +202,19 @@ export interface QuestionDTO {
   optionC: string;
   optionD: string;
   correctOption: string;
+  solutionLink?: string;
 }
 
 export const questionsAPI = {
-  getByMockTest: async (mockTestId: number): Promise<ApiResponse<QuestionResponse[]>> => {
+  getByMockTest: async (mockTestId: number): Promise<ApiResponse<QuestionDTO[]>> => {
     const response = await api.get(`/api/admin/mocktests/${mockTestId}/questions`);
     return response.data;
   },
-  create: async (mockTestId: number, question: QuestionRequest): Promise<ApiResponse<QuestionResponse>> => {
+  create: async (mockTestId: number, question: QuestionRequest): Promise<ApiResponse<QuestionDTO>> => {
     const response = await api.post(`/api/admin/mocktests/${mockTestId}/questions`, question);
     return response.data;
   },
-  update: async (questionId: number, question: QuestionRequest): Promise<ApiResponse<QuestionResponse>> => {
+  update: async (questionId: number, question: QuestionRequest): Promise<ApiResponse<QuestionDTO>> => {
     const response = await api.put(`/api/admin/mocktests/questions/${questionId}`, question);
     return response.data;
   },
@@ -223,15 +225,15 @@ export const questionsAPI = {
 };
 
 export const freeQuestionsAPI = {
-  getByMockTest: async (mockTestId: number): Promise<ApiResponse<QuestionResponse[]>> => {
+  getByMockTest: async (mockTestId: number): Promise<ApiResponse<QuestionDTO[]>> => {
     const response = await api.get(`/api/admin/Free/mocktests/${mockTestId}/questions`);
     return response.data;
   },
-  create: async (mockTestId: number, question: QuestionRequest): Promise<ApiResponse<QuestionResponse>> => {
+  create: async (mockTestId: number, question: QuestionRequest): Promise<ApiResponse<QuestionDTO>> => {
     const response = await api.post(`/api/admin/Free/mocktests/${mockTestId}/questions`, question);
     return response.data;
   },
-  update: async (questionId: number, question: QuestionRequest): Promise<ApiResponse<QuestionResponse>> => {
+  update: async (questionId: number, question: QuestionRequest): Promise<ApiResponse<QuestionDTO>> => {
     const response = await api.put(`/api/admin/Free/mocktests/questions/${questionId}`, question);
     return response.data;
   },
@@ -262,6 +264,58 @@ export interface UserRequest {
   roles: string;
   status: string;
 }
+
+export interface AttemptResponse {
+  id: number;
+  userId: number;
+  mockTestId: number;
+  mockTestName: string;
+  mockTestType: 'PAID' | 'FREE';
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  unanswered: number;
+  timeTaken: number;
+  completedAt: string;
+  answers: AttemptAnswerResponse[];
+}
+
+export interface AttemptAnswerResponse {
+  questionId: number;
+  questionNo: number;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: string;
+  selectedOption: string | null;
+  isCorrect: boolean;
+  solutionLink?: string;
+}
+
+export const attemptsAPI = {
+  getUserAttempts: async (userId: number): Promise<ApiResponse<AttemptResponse[]>> => {
+    const response = await api.get(`/api/attempts/user/${userId}`);
+    return response.data;
+  },
+  getAttemptDetails: async (attemptId: number): Promise<ApiResponse<AttemptResponse>> => {
+    const response = await api.get(`/api/attempts/${attemptId}`);
+    return response.data;
+  },
+  saveAttempt: async (attemptData: {
+    userId: number;
+    mockTestId: number;
+    mockTestName: string;
+    mockTestType: 'PAID' | 'FREE';
+    answers: { questionId: number; selectedOption: string | null }[];
+    timeTaken: number;
+  }): Promise<ApiResponse<AttemptResponse>> => {
+    const response = await api.post('/api/attempts', attemptData);
+    return response.data;
+  }
+};
 
 export interface UserResponse {
   userid: number;
@@ -438,11 +492,11 @@ export const userDppAPI = {
     const response = await api.get(`/api/user/free/mocktests/${id}`);
     return response.data;
   },
-  getQuestions: async (mockTestId: number): Promise<ApiResponse<QuestionResponse[]>> => {
+  getQuestions: async (mockTestId: number): Promise<ApiResponse<QuestionDTO[]>> => {
     const response = await api.get(`/api/user/mocktests/${mockTestId}/questions`);
     return response.data;
   },
-  getFreeQuestions: async (mockTestId: number): Promise<ApiResponse<QuestionResponse[]>> => {
+  getFreeQuestions: async (mockTestId: number): Promise<ApiResponse<QuestionDTO[]>> => {
     const response = await api.get(`/api/user/free/mocktests/${mockTestId}/questions`);
     return response.data;
   },

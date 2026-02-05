@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { questionsAPI, type QuestionRequest, type QuestionResponse, type MockTestResponse } from '../services/api';
+import { questionsAPI, type QuestionRequest, type QuestionDTO, type MockTestResponse } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import Notification from '../components/Notification';
 import Loader from '../components/Loader';
@@ -11,10 +11,10 @@ interface QuestionsProps {
 }
 
 export default function Questions({ mockTest, onClose }: QuestionsProps) {
-  const [questions, setQuestions] = useState<QuestionResponse[]>([]);
+  const [questions, setQuestions] = useState<QuestionDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<QuestionResponse | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<QuestionDTO | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; questionId: number | null; questionText: string }>({ show: false, questionId: null, questionText: '' });
   const { notification, showNotification, hideNotification } = useNotification();
 
@@ -25,7 +25,8 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
     optionB: '',
     optionC: '',
     optionD: '',
-    correctOption: 'A'
+    correctOption: 'A',
+    solutionLink: ''
   });
 
   useEffect(() => {
@@ -51,11 +52,16 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
     e.preventDefault();
     
     try {
+      const submitData = {
+        ...formData,
+        solutionLink: formData.solutionLink?.trim() || undefined
+      };
+      
       if (editingQuestion) {
-        await questionsAPI.update(editingQuestion.id, formData);
+        await questionsAPI.update(editingQuestion.id, submitData);
         showNotification('Question updated successfully', 'success');
       } else {
-        await questionsAPI.create(mockTest.id, formData);
+        await questionsAPI.create(mockTest.id, submitData);
         showNotification('Question added successfully', 'success');
       }
       
@@ -66,7 +72,7 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
     }
   };
 
-  const handleEdit = (question: QuestionResponse) => {
+  const handleEdit = (question: QuestionDTO) => {
     setEditingQuestion(question);
     setFormData({
       questionNo: question.questionNo,
@@ -75,12 +81,13 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
       optionB: question.optionB,
       optionC: question.optionC,
       optionD: question.optionD,
-      correctOption: question.correctOption
+      correctOption: question.correctOption,
+      solutionLink: question.solutionLink || ''
     });
     setShowForm(true);
   };
 
-  const handleDelete = (question: QuestionResponse) => {
+  const handleDelete = (question: QuestionDTO) => {
     setDeleteConfirm({ 
       show: true, 
       questionId: question.id, 
@@ -116,7 +123,8 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
       optionB: '',
       optionC: '',
       optionD: '',
-      correctOption: 'A'
+      correctOption: 'A',
+      solutionLink: ''
     });
     setEditingQuestion(null);
     setShowForm(false);
@@ -215,6 +223,16 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
                 </select>
               </div>
               
+              <div className="form-group">
+                <label>🎥 Solution Link (YouTube)</label>
+                <input
+                  type="url"
+                  value={formData.solutionLink || ''}
+                  onChange={(e) => setFormData({...formData, solutionLink: e.target.value})}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+              
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={resetForm}>
                   Cancel
@@ -271,6 +289,16 @@ export default function Questions({ mockTest, onClose }: QuestionsProps) {
                     </div>
                     <div className="correct-answer-indicator">
                       <strong>✅ Correct Answer: {question.correctOption}</strong>
+                      {question.solutionLink && (
+                        <a 
+                          href={question.solutionLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="solution-link"
+                        >
+                          🎥 Solution
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

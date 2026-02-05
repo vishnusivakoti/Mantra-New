@@ -446,33 +446,6 @@ export default function Users() {
                 </div>
               </div>
               
-              <div className="form-row">
-                <div className="form-group">
-                  <label>👨‍👩‍👧‍👦 Role</label>
-                  <select
-                    value={formData.roles}
-                    onChange={(e) => setFormData({...formData, roles: e.target.value})}
-                    required
-                  >
-                    <option value="USER">User</option>
-                    <option value="MOCKTEST">Mock Test</option>
-                    <option value="FULL_COURSE">Full Course</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>📊 Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    required
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={resetForm}>
                   Cancel

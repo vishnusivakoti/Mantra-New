@@ -18,6 +18,7 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
   { key: 'tests', label: 'Mock Tests', path: '/student/tests', icon: '📝', roles: ['MOCKTEST', 'FULL_COURSE'] },
   { key: 'free-tests', label: 'Free Tests', path: '/student/free-tests', icon: '🆓', roles: ['USER'] },
   { key: 'practice', label: 'Daily Practice', path: '/student/practice', icon: '📚', roles: ['FULL_COURSE'] },
+  { key: 'attempts', label: 'My Attempts', path: '/my-attempts', icon: '📊', roles: ['USER', 'MOCKTEST', 'FULL_COURSE'] },
   { key: 'scores', label: 'My Scores', path: '/scores', icon: '🏆', roles: ['USER', 'MOCKTEST', 'FULL_COURSE'] },
   { key: 'profile', label: 'Profile', path: '/profile', icon: '👤', roles: ['USER', 'MOCKTEST', 'FULL_COURSE'] },
 ];

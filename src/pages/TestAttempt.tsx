@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { userMockTestsAPI, scoresAPI, type AttemptTestDTO, type AttemptQuestionDTO, type QuestionDTO } from '../services/api';
+import { userMockTestsAPI, scoresAPI, attemptsAPI, type AttemptTestDTO, type AttemptQuestionDTO, type QuestionDTO } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import Notification from '../components/Notification';
 import Loader from '../components/Loader';
@@ -155,6 +155,23 @@ export default function TestAttempt() {
         showNotification('Failed to calculate score', 'error');
         return;
       }
+      
+      // Save detailed attempt data
+      const attemptAnswers = attemptData.questions.map(question => ({
+        questionId: question.questionId,
+        selectedOption: answers[question.questionId] || null
+      }));
+      
+      const timeTaken = (attemptData.timerInMinutes * 60) - timeRemaining; // Calculate time taken
+      
+      await attemptsAPI.saveAttempt({
+        userId: userData.userid,
+        mockTestId: attemptData.mockTestId,
+        mockTestName: attemptData.mockTestName,
+        mockTestType: testType === 'paid' ? 'PAID' : 'FREE',
+        answers: attemptAnswers,
+        timeTaken
+      });
       
       // Save score
       await scoresAPI.saveScore(

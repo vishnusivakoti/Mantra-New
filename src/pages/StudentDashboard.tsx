@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { userMockTestsAPI, scoresAPI, type MockTestScore } from '../services/api';
+import { userMockTestsAPI, scoresAPI, attemptsAPI, type MockTestScore, type AttemptResponse } from '../services/api';
 import { useNotification } from '../hooks/useNotification';
 import Notification from '../components/Notification';
 import Loader from '../components/Loader';
@@ -18,6 +18,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [recentScores, setRecentScores] = useState<MockTestScore[]>([]);
+  const [recentAttempts, setRecentAttempts] = useState<AttemptResponse[]>([]);
   const [testCount, setTestCount] = useState(0);
   const { notification, showNotification, hideNotification } = useNotification();
 
@@ -34,8 +35,20 @@ export default function StudentDashboard() {
       setUserData(parsedUser);
 
       // Load recent scores
-      const userScores = await scoresAPI.getUserScores(parsedUser.userid);
-      setRecentScores(userScores.slice(0, 3)); // Show only recent 3 scores
+      try {
+        const userScores = await scoresAPI.getUserScores(parsedUser.userid);
+        setRecentScores(userScores.slice(0, 3));
+      } catch (error) {
+        console.log('No scores found for user');
+      }
+
+      // Load recent attempts
+      try {
+        const userAttempts = await attemptsAPI.getUserAttempts(parsedUser.userid);
+        setRecentAttempts(userAttempts.data.slice(0, 3));
+      } catch (error) {
+        console.log('No attempts found for user');
+      }
 
       // Load available tests count
       if (parsedUser.role === 'FULL_COURSE' || parsedUser.role === 'MOCKTEST') {
@@ -59,21 +72,22 @@ export default function StudentDashboard() {
     
     if (userData.role === 'FULL_COURSE') {
       actions.push(
-        { label: 'Join Live Class', icon: '🎥', path: '/meetings', color: '#10b981' },
-        { label: 'Take Mock Test', icon: '📝', path: '/tests', color: '#3b82f6' },
-        { label: 'Daily Practice', icon: '📚', path: '/dpp', color: '#f59e0b' }
+        { label: 'Join Live Class', icon: '🎥', path: '/student/meetings', color: '#10b981' },
+        { label: 'Take Mock Test', icon: '📝', path: '/student/tests', color: '#3b82f6' },
+        { label: 'Daily Practice', icon: '📚', path: '/student/practice', color: '#f59e0b' }
       );
     } else if (userData.role === 'MOCKTEST') {
       actions.push(
-        { label: 'Take Mock Test', icon: '📝', path: '/tests', color: '#3b82f6' }
+        { label: 'Take Mock Test', icon: '📝', path: '/student/tests', color: '#3b82f6' }
       );
     } else {
       actions.push(
-        { label: 'Free Mock Tests', icon: '🆓', path: '/free-tests', color: '#8b5cf6' }
+        { label: 'Free Mock Tests', icon: '🆓', path: '/student/free-tests', color: '#8b5cf6' }
       );
     }
     
     actions.push(
+      { label: 'My Attempts', icon: '📊', path: '/my-attempts', color: '#8b5cf6' },
       { label: 'View Scores', icon: '🏆', path: '/scores', color: '#ef4444' },
       { label: 'My Profile', icon: '👤', path: '/profile', color: '#6b7280' }
     );
@@ -108,14 +122,14 @@ export default function StudentDashboard() {
         <div className="stat-card">
           <div className="stat-icon">🏆</div>
           <div className="stat-content">
-            <h3>{recentScores.length}</h3>
+            <h3>{recentAttempts.length}</h3>
             <p>Tests Completed</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">📈</div>
           <div className="stat-content">
-            <h3>{recentScores.length > 0 ? Math.round(recentScores.reduce((acc, score) => acc + score.score, 0) / recentScores.length) : 0}%</h3>
+            <h3>{recentAttempts.length > 0 ? Math.round(recentAttempts.reduce((acc, attempt) => acc + (attempt.score / attempt.totalQuestions * 100), 0) / recentAttempts.length) : 0}%</h3>
             <p>Average Score</p>
           </div>
         </div>
@@ -139,6 +153,41 @@ export default function StudentDashboard() {
           ))}
         </div>
       </div>
+
+      {recentAttempts.length > 0 && (
+        <div className="recent-attempts">
+          <div className="section-header">
+            <h2>Recent Attempts</h2>
+            <button onClick={() => navigate('/my-attempts')} className="view-all-btn">
+              View All →
+            </button>
+          </div>
+          <div className="attempts-list">
+            {recentAttempts.map((attempt) => (
+              <div key={attempt.id} className="attempt-item">
+                <div className="attempt-info">
+                  <h4>{attempt.mockTestName}</h4>
+                  <p>{new Date(attempt.completedAt).toLocaleDateString()}</p>
+                  <span className={`test-type ${attempt.mockTestType.toLowerCase()}`}>
+                    {attempt.mockTestType}
+                  </span>
+                </div>
+                <div className="attempt-stats">
+                  <div className="score-display">
+                    <span className="score">{attempt.score}/{attempt.totalQuestions}</span>
+                    <span className="percentage">{Math.round((attempt.score / attempt.totalQuestions) * 100)}%</span>
+                  </div>
+                  <div className="breakdown">
+                    <span className="correct">✓ {attempt.correctAnswers}</span>
+                    <span className="wrong">✗ {attempt.wrongAnswers}</span>
+                    <span className="unanswered">- {attempt.unanswered}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {recentScores.length > 0 && (
         <div className="recent-scores">
